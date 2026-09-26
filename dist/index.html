@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      (function(){
+        var key="_spinnyReloadCount", max=3;
+        window.addEventListener("error",function(e){
+          var t=e.target;
+          if(!(t&&(t.tagName==="SCRIPT"||t.tagName==="LINK"))) return;
+          var u=t.src||t.href||"";
+          if(u.indexOf("/assets/")===-1) return;
+          var c=parseInt(sessionStorage.getItem(key)||"0",10);
+          if(c>=max) return;
+          sessionStorage.setItem(key,String(c+1));
+          setTimeout(function(){ location.href=location.pathname+location.search.replace(/[?&]_r=\d+/,"")+(location.search?"&":"?")+"_r="+Date.now(); },c*900);
+        },true);
+        window.addEventListener("load",function(){sessionStorage.removeItem(key)});
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090d18" />
+    <meta name="description" content="SpinnyPet private beta testing platform for Pet Simulator 99 pets." />
+    <link rel="icon" type="image/png" href="/assets/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Syne:wght@700;800&family=Nunito:wght@700;800;900&family=Baloo+2:wght@500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+    <title>SpinnyPet Beta</title>
+    <script type="module" crossorigin src="/assets/index-DSTLRqJP.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DInExVar.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
