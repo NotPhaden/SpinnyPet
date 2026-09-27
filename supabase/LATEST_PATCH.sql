@@ -1397,3 +1397,7 @@ grant execute on function public.beta_admin_trigger_chaos(text,text,text,bigint,
 
 notify pgrst,'reload schema';
 commit;
+
+
+-- V22.8 realtime hardening
+do $$ begin alter table public.beta_admin_effects replica identity full; exception when undefined_table then null; end $$;

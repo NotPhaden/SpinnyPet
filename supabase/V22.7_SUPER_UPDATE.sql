@@ -172,6 +172,10 @@ grant execute on function public.beta_sell_all_pets(text) to anon,authenticated;
 -- ============================================================
 -- 4) Case Battle: 1-50 rounds + duplicate case support
 -- ============================================================
+-- PostgreSQL cannot remove an existing parameter default with
+-- CREATE OR REPLACE FUNCTION. Drop the exact deployed signature first.
+drop function if exists public.beta_join_case_battle(text,uuid,jsonb);
+
 create or replace function public.beta_create_case_battle(p_token text,p_case_ids jsonb)
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare uid uuid; uname text; cid text; total bigint:=0; bid uuid; price bigint;
@@ -196,10 +200,11 @@ begin
 end; $$;
 grant execute on function public.beta_create_case_battle(text,jsonb) to anon,authenticated;
 
-create or replace function public.beta_join_case_battle(p_token text,p_battle_id uuid,p_case_ids jsonb)
+create or replace function public.beta_join_case_battle(p_token text,p_battle_id uuid,p_case_ids jsonb default '[]'::jsonb)
 returns jsonb language plpgsql security definer set search_path=public as $$
 declare
   uid uuid; uname text; b public.beta_case_battles%rowtype; cid text; price bigint; total bigint:=0;
+  join_cases jsonb;
   reward jsonb; rewards jsonb:='[]'::jsonb; cs bigint:=0; js bigint:=0; winner uuid; wname text; r jsonb;
 begin
   select user_id into uid from public.beta_sessions where token=p_token and expires_at>now();
@@ -207,9 +212,17 @@ begin
   select * into b from public.beta_case_battles where id=p_battle_id and status='open' and creator_id<>uid for update;
   if b.id is null then raise exception 'Case Battle is no longer available'; end if;
   select username into uname from public.beta_accounts where id=uid;
-  if jsonb_typeof(coalesce(p_case_ids,'[]'::jsonb))<>'array' or jsonb_array_length(p_case_ids)<1 or jsonb_array_length(p_case_ids)>50 then raise exception 'Choose 1 to 50 cases'; end if;
-  if jsonb_array_length(p_case_ids)<>jsonb_array_length(b.creator_cases) then raise exception 'Use the same number of rounds as the host'; end if;
-  for cid in select value from jsonb_array_elements_text(p_case_ids) loop
+  -- Joining a battle does not require a second case selection. If the client
+  -- sends an empty array, automatically use the host's exact case bundle.
+  join_cases := case
+    when jsonb_typeof(coalesce(p_case_ids,'[]'::jsonb))='array'
+         and jsonb_array_length(coalesce(p_case_ids,'[]'::jsonb))=0
+      then b.creator_cases
+    else coalesce(p_case_ids,'[]'::jsonb)
+  end;
+  if jsonb_typeof(join_cases)<>'array' or jsonb_array_length(join_cases)<1 or jsonb_array_length(join_cases)>50 then raise exception 'Choose 1 to 50 cases'; end if;
+  if jsonb_array_length(join_cases)<>jsonb_array_length(b.creator_cases) then raise exception 'Use the same number of rounds as the host'; end if;
+  for cid in select value from jsonb_array_elements_text(join_cases) loop
     select c.price into price from public.beta_cases c where c.id=cid and c.active=true;
     if price is null then raise exception 'Case % is unavailable',cid; end if;
     total:=total+price;
@@ -222,7 +235,7 @@ begin
     reward:=public.beta_case_battle_pick_reward(cid); cs:=cs+coalesce((reward->>'pet_value')::bigint,0);
     rewards:=rewards||jsonb_build_array(jsonb_build_object('owner','creator','case_id',cid)||reward);
   end loop;
-  for cid in select value from jsonb_array_elements_text(p_case_ids) loop
+  for cid in select value from jsonb_array_elements_text(join_cases) loop
     reward:=public.beta_case_battle_pick_reward(cid); js:=js+coalesce((reward->>'pet_value')::bigint,0);
     rewards:=rewards||jsonb_build_array(jsonb_build_object('owner','joiner','case_id',cid)||reward);
   end loop;
@@ -241,7 +254,7 @@ begin
   end if;
 
   update public.beta_case_battles
-  set joiner_id=uid,joiner_username=uname,joiner_cases=p_case_ids,joiner_total=total,
+  set joiner_id=uid,joiner_username=uname,joiner_cases=join_cases,joiner_total=total,
       creator_score=cs,joiner_score=js,winner_id=winner,winner_username=wname,status='finished',finished_at=now()
   where id=b.id;
   insert into public.beta_activity(user_id,username,activity_type,game_type,amount,profit_loss,description)
@@ -273,6 +286,7 @@ grant select on public.beta_admin_effects to anon,authenticated;
 
 do $$
 begin
+  alter table public.beta_admin_effects replica identity full;
   alter publication supabase_realtime add table public.beta_admin_effects;
 exception when duplicate_object then null;
 when undefined_object then null;
