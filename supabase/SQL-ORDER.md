@@ -47,3 +47,6 @@ After the SQL is applied:
 Run `V21.3_FINAL_FIXES.sql` after `V21.2_FINAL_FIXES.sql`. The V21.3 file now ends with the V21.4 Clan treasury + persistent giveaway-state patch. This patch contains the final UI-supporting RPCs, automatic Time Rewards, automatic Clan Top-1 payout worker, official case tier routing, and Case Battle reward routing.
 
 - V21.4.1_FINAL_FIXES.sql — hard fixes for Color Dice, Case Battle opening reels, persistent Giveaways, Time Rewards route/UI, Clans Top Clans RPC and treasury behavior.
+
+### V22.7 SUPER UPDATE
+Run `V22.7_SUPER_UPDATE.sql` after the existing V22.6/V22.6.2 stack. It fixes the Coinflip pet quantity constraint bug, aligns Case Battle with the 1–50 round UI, adds pet selling, and adds the realtime Admin Abuse / Global Drop console.

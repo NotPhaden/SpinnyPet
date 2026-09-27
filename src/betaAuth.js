@@ -116,6 +116,10 @@ export async function betaAdminDeleteClan(clanId) { return rpc("beta_admin_delet
 export async function betaGetClanBattleTimer() { return (await rpc("beta_get_clan_battle_timer", {})) || null; }
 export async function betaAdminResetClanBattleTimer() { return rpc("beta_admin_reset_clan_battle_timer", { p_token:getBetaToken() }); }
 export async function betaAdminResetLeaderboard() { return rpc("beta_admin_reset_leaderboard", { p_token:getBetaToken() }); }
+export async function betaSellPet(petId, variant = "normal", quantity = 1) { return rpc("beta_sell_pet", { p_token:getBetaToken(), p_pet_id:petId, p_variant:variant, p_quantity:Number(quantity||1) }); }
+export async function betaSellAllPets() { return rpc("beta_sell_all_pets", { p_token:getBetaToken() }); }
+export async function betaAdminTriggerChaos(effectType, targetPage="all", rewardAmount=0, message="") { return rpc("beta_admin_trigger_chaos", { p_token:getBetaToken(), p_effect_type:String(effectType), p_target_page:String(targetPage), p_reward_amount:Number(rewardAmount||0), p_message:String(message||"") }); }
+
 export async function betaRunUpgrade(inputPetItems, diamondAmount, targetPetIds, riskAngle=0) {
   return rpc("beta_run_upgrade_v3",{p_token:getBetaToken(),p_input_pet_items:inputPetItems,p_diamond_amount:Number(diamondAmount||0),p_target_pet_ids:targetPetIds,p_risk_angle:Number(riskAngle)||0});
 }

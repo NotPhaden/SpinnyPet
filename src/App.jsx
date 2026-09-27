@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "re
 import { ArrowUp, CircleUserRound, Dice5, Gift, Hash, Heart, LogIn, MessageCircle, Package, RefreshCw, ShieldCheck, Trophy, WalletCards, X, Crown, Users, Sparkles, Send, Plus, Clock3, History, TrendingUp, TrendingDown, Box, Zap, Tag, Upload, Calculator, Minus, Medal, BarChart3, UserPlus, UserMinus, Settings2, Swords } from "lucide-react";
 import { supabase, supabaseConfigured } from "./supabase";
 import { fetchPets, filterEligiblePets } from "./api";
-import { betaClaimBonus, betaClaimDailyCase, betaCreateGiveaway, betaCreateLobby, betaCreateDiceLobby, betaJoinDiceLobby, betaDrawGiveaway, betaEnterGiveaway, betaGetGiveaways, betaGetHistory, betaGetLiveBets, betaGetInventory, betaGetStats, betaSendChat, betaSession, betaSignIn, betaSignOut, betaSignUp, betaUpdateRobloxProfile, betaRunUpgrade, betaGetRole, betaAdminGetUsers, betaAdminGetInventory, betaAdminClearInventory, betaAdminRemovePet, betaAdminAddPet, betaAdminSetBalance, betaAdminGiveAll, betaAdminModerate, betaAdminSetRole, betaAdminSetEvent, betaGetActiveEvent, betaJoinEvent, betaPlayEvent, betaOpenCase, betaRedeemPromo, betaAdminCreatePromo, betaFinalizeGiveaways, betaGetJoinedGiveaways, betaUpdateCustomAvatar, betaListLobbies, betaCancelLobby, betaGetCoinflipResult, betaGetLobbyResult, betaJoinLobby, betaCreateCaseBattle, betaJoinCaseBattle, betaGetCaseBattle, betaListCaseBattles, betaGetTimeRewards, betaClaimTimeReward, betaOpenCaseTicket, betaGetTimeTickets, betaGetLeaderboard, betaGetClan, betaGetTopClans, betaGetPublicClan, betaCreateClan, betaInviteToClan, betaRespondClanInvite, betaKickClanMember, betaUpgradeClan, betaClaimClanTopReward, betaDepositClan, betaAdminDeleteClan, betaGetClanBattleTimer, betaAdminResetClanBattleTimer, betaAdminResetLeaderboard } from "./betaAuth";
+import { betaClaimBonus, betaClaimDailyCase, betaCreateGiveaway, betaCreateLobby, betaCreateDiceLobby, betaJoinDiceLobby, betaDrawGiveaway, betaEnterGiveaway, betaGetGiveaways, betaGetHistory, betaGetLiveBets, betaGetInventory, betaSellPet, betaSellAllPets, betaGetStats, betaSendChat, betaSession, betaSignIn, betaSignOut, betaSignUp, betaUpdateRobloxProfile, betaRunUpgrade, betaGetRole, betaAdminGetUsers, betaAdminGetInventory, betaAdminClearInventory, betaAdminRemovePet, betaAdminAddPet, betaAdminSetBalance, betaAdminGiveAll, betaAdminModerate, betaAdminSetRole, betaAdminSetEvent, betaAdminTriggerChaos, betaGetActiveEvent, betaJoinEvent, betaPlayEvent, betaOpenCase, betaRedeemPromo, betaAdminCreatePromo, betaFinalizeGiveaways, betaGetJoinedGiveaways, betaUpdateCustomAvatar, betaListLobbies, betaCancelLobby, betaGetCoinflipResult, betaGetLobbyResult, betaJoinLobby, betaCreateCaseBattle, betaJoinCaseBattle, betaGetCaseBattle, betaListCaseBattles, betaGetTimeRewards, betaClaimTimeReward, betaOpenCaseTicket, betaGetTimeTickets, betaGetLeaderboard, betaGetClan, betaGetTopClans, betaGetPublicClan, betaCreateClan, betaInviteToClan, betaRespondClanInvite, betaKickClanMember, betaUpgradeClan, betaClaimClanTopReward, betaDepositClan, betaAdminDeleteClan, betaGetClanBattleTimer, betaAdminResetClanBattleTimer, betaAdminResetLeaderboard } from "./betaAuth";
 import { displayPetValue, formatCompact, formatNumber, parseCompactAmount, rankForWagered } from "./format";
 import { Modal, PetCard, PetIcon, PoolCard, SearchBox, tierOf } from "./components";
 import { resolveRobloxAvatar } from "./roblox";
@@ -59,6 +59,7 @@ export default function App(){
   const [giveaways,setGiveaways]=useState([]); const [joinedGiveawayIds,setJoinedGiveawayIds]=useState([]);
   const [role,setRole]=useState("user");
   const [event,setEvent]=useState(null);
+  const [adminEffect,setAdminEffect]=useState(null);
 
   useEffect(()=>{
     document.title=`${SITE_NAME} · Beta`; document.querySelector('link[rel="icon"]')?.setAttribute("href","/assets/favicon.png");
@@ -67,7 +68,20 @@ export default function App(){
     const giveawayTimer=setInterval(()=>{ betaFinalizeGiveaways().then(loadGiveaways).catch(()=>{}); },2000);
     const cached=betaSession(); cached.then(async s=>{ if(s){ setSession(s); setProfile(s); await refreshPrivate(); } });
     let channel=null;
+    let adminChannel=null;
     if(supabase){
+      adminChannel=supabase.channel("spinnypet-admin-effects")
+        .on("postgres_changes",{event:"INSERT",schema:"public",table:"beta_admin_effects"},(p)=>{
+          const fx=p.new||{};
+          const target=String(fx.target_page||"all");
+          if(target!=="all" && target!==currentRoute()) return;
+          setAdminEffect({...fx,_nonce:Date.now()});
+          if(Number(fx.reward_amount||0)>0){
+            refreshPrivate();
+            setToast(`ADMIN DROP · +💎 ${formatCompact(Number(fx.reward_amount))}`);
+          }
+          setTimeout(()=>setAdminEffect(null),6500);
+        }).subscribe();
       channel=supabase.channel("petflip-live")
         .on("postgres_changes",{event:"INSERT",schema:"public",table:"beta_chat_messages"},(p)=>{
           setChat(v=>{
@@ -77,7 +91,7 @@ export default function App(){
         })
         .subscribe();
     }
-    return ()=>{ window.removeEventListener("popstate",onPop); if(channel) supabase.removeChannel(channel); clearInterval(giveawayTimer); };
+    return ()=>{ window.removeEventListener("popstate",onPop); if(channel) supabase.removeChannel(channel); if(adminChannel) supabase.removeChannel(adminChannel); clearInterval(giveawayTimer); };
   },[]);
 
   useEffect(()=>{ loadGiveaways(); },[session?.user_id]);
@@ -108,6 +122,7 @@ export default function App(){
     if(window.location.pathname!==path) window.history.pushState({page:isCase?"cases":raw,caseId:isCase?caseFromPath():null},"",path);
     setCaseId(isCase ? decodeURIComponent(raw.replace(/^\/cases\//,"")) : null);
     setPage(isCase ? "cases" : raw);
+    setAdminEffect(null);
     window.scrollTo({top:0,behavior:"smooth"});
   }
   async function loadPets(force=false){ setLoadingPets(true); setPetError(""); try{ setPets(await fetchPets({forceRefresh:force})); }catch(e){setPetError(e.message||"Could not load the pet catalog.");}finally{setLoadingPets(false);} }
@@ -192,10 +207,11 @@ export default function App(){
         <div className="sidebar-bottom"><button className="beta-bonus" onClick={claimBonus}><Gift size={19}/><span><b>50B + Random Titanic</b><small>Every 30 minutes</small></span></button>{session&&<button className="signout" onClick={signOut}><LogIn size={15}/><span>Sign out</span></button>}</div>
       </aside>
       <main className="content">
+        <PageAtmosphere page={page} adminEffect={adminEffect} />
         {page==="home"&&<Home pets={eligible} filtered={filtered} loading={loadingPets} error={petError} search={search} setSearch={setSearch} refresh={()=>loadPets(true)} navigate={navigate} rank={rank} balance={balance}/>} 
         {page==="coinflip"&&<CoinflipPage inventory={inventory} balance={balance} session={session} setAuthOpen={setAuthOpen} toast={setToast}/>}
         {page==="dice"&&<ColorDicePage pets={eligible} inventory={inventory} balance={balance} session={session} setAuthOpen={setAuthOpen} toast={setToast}/>} 
-        {page==="inventory"&&<InventoryPage pets={eligible} inventory={inventory} search={search} setSearch={setSearch}/>} 
+        {page==="inventory"&&<InventoryPage pets={eligible} inventory={inventory} search={search} setSearch={setSearch} setToast={setToast} onRefresh={refreshPrivate}/>} 
         {page==="profile"&&<ProfilePage session={session} stats={stats} history={history} rank={rank} onSignIn={()=>{setAuthMode("login");setAuthOpen(true)}} onClaim={claimBonus} onSignOut={signOut} onCustomAvatar={async(url)=>{try{const saved=await betaUpdateCustomAvatar(url);const avatar=saved?.custom_avatar_url||url||"";setStats(v=>({...v,custom_avatar_url:avatar}));setChat(v=>v.map(m=>m.user_id===session?.user_id?({...m,custom_avatar_url:avatar}):m));await refreshPrivate();setStats(v=>({...v,custom_avatar_url:avatar}));setToast("Profile picture updated.")}catch(e){setToast(e.message||"Could not update picture.")}}}/>} 
         {(page==="time-rewards"||page==="daily-cases")&&<TimeRewardsPage session={session} pets={eligible} balance={balance} setAuthOpen={setAuthOpen} setToast={setToast}/>}
         {page==="cases"&&<CasesPage session={session} pets={eligible} balance={balance} setAuthOpen={setAuthOpen} setToast={setToast} navigate={navigate} caseId={caseId}/>}
@@ -210,6 +226,33 @@ export default function App(){
     </div>
     {authOpen&&<AuthModal mode={authMode} setMode={setAuthMode} onClose={()=>setAuthOpen(false)} onSuccess={authSuccess}/>} 
     {toast&&<div className="toast"><span>{toast}</span><button onClick={()=>setToast("")}><X size={15}/></button></div>}
+  </div>;
+}
+
+function PageAtmosphere({page,adminEffect}){
+  const pageMeta={
+    home:{label:"SPINNYVERSE",icon:"✦",items:["💎","🐾","✦","◆","✧"]},
+    coinflip:{label:"COIN RUSH",icon:"◉",items:["H","T","💎","◉","T"]},
+    dice:{label:"DICE STORM",icon:"🎲",items:["🔴","🟣","🟡","🔵","🟢"]},
+    inventory:{label:"PET VAULT",icon:"🐾",items:["🐾","✨","💎","◈","🐾"]},
+    profile:{label:"PLAYER AURA",icon:"◈",items:["✦","◈","✧","💎"]},
+    "time-rewards":{label:"REWARD RUSH",icon:"⏱",items:["🎁","💎","✨","🎁"]},
+    cases:{label:"CASE RAIN",icon:"▣",items:["📦","💎","✨","📦"]},
+    "case-battle":{label:"BATTLE ARENA",icon:"⚔",items:["⚔","📦","💎","🏆"]},
+    leaderboard:{label:"CHAMPION MODE",icon:"🏆",items:["🏆","✦","💎","1","2","3"]},
+    clans:{label:"CLAN ENERGY",icon:"⚔",items:["⚔","✦","◆","🏆"]},
+    giveaways:{label:"GIVEAWAY RAIN",icon:"🎁",items:["🎁","💎","✨","🎁"]},
+    promo:{label:"PROMO BOOST",icon:"#",items:["#","💎","✦","⚡"]},
+    admin:{label:"ADMIN OVERRIDE",icon:"⚡",items:["⚡","💎","☢","✦","⚡"]}
+  };
+  const meta=pageMeta[page]||pageMeta.home;
+  const fx=adminEffect;
+  const fxType=fx?.effect_type||"";
+  const fxClass=fx?` admin-fx-${fxType}`:"";
+  return <div className={`page-atmosphere-layer page-atmosphere-${page}${fxClass}`} aria-hidden="true">
+    <div className="page-atmosphere-badge"><i>{meta.icon}</i><span>{fx?String(fx.message||"ADMIN ABUSE").toUpperCase():meta.label}</span>{fx?.reward_amount>0&&<b>+💎 {formatCompact(Number(fx.reward_amount))}</b>}</div>
+    <div className="page-atmosphere-particles">{Array.from({length:18},(_,i)=>{const left=(i*19+7)%96;const top=(i*31+11)%92;return <span key={i} style={{"--i":i,"--delay":`${(i%7)*.35}s`,left:`${left}%`,top:`${top}%`}}>{meta.items[i%meta.items.length]}</span>})}</div>
+    {fx&&<div className="admin-fx-sweep"><strong>⚡ ADMIN ABUSE ⚡</strong><small>{String(fx.message||fx.effect_type||"EVENT").toUpperCase()}</small></div>}
   </div>;
 }
 
@@ -681,12 +724,52 @@ function CaseBattlePage({session,pets,balance,setAuthOpen,setToast}){
   </section>;
 }
 
-function InventoryPage({pets,inventory,search,setSearch}){
+function InventoryPage({pets,inventory,search,setSearch,setToast,onRefresh}){
   const [tab,setTab]=useState("All");
+  const [selected,setSelected]=useState([]);
+  const [selling,setSelling]=useState(false);
   const q=search.trim().toLowerCase();
   const owned=inventory.filter(i=>isHighTierName(i.name)&&(!q||i.name.toLowerCase().includes(q))&&(tab==="All"||tierOf({name:i.name})===tab.toUpperCase()));
-  return <section><div className="page-header"><div><span>YOUR COLLECTION</span><h1>Inventory</h1><small>Owned Huge · Titanic · Gargantuan items. 0-RAP / NOT PRICED items remain selectable.</small></div><SearchBox value={search} onChange={setSearch} placeholder="Search inventory..."/></div><div className="tabs">{["All","Huge","Titanic","Gargantuan"].map(t=><button className={tab===t?"active":""} key={t} onClick={()=>setTab(t)}>{t}</button>)}</div><div className="owned-grid">{owned.length?owned.map(i=><div className="owned-card" key={i.id}><PetIcon pet={inventoryPetShape(i)} size="medium" variant={i.variant}/><div><b>{i.name}</b><small>{i.quantity} × {i.variant}</small><strong>💎 {formatPetValue(i)}</strong></div></div>):<div className="empty-state wide"><Package size={32}/><b>No owned high-tier pets</b><span>Your rewards, wins and giveaways will appear here.</span></div>}</div></section>}
-
+  const key=i=>`${i.pet_id}:${i.variant||"normal"}`;
+  const selectedItems=owned.filter(i=>selected.includes(key(i)));
+  const selectedValue=selectedItems.reduce((sum,i)=>sum+petValue(i)*Number(i.quantity||0),0);
+  function toggle(i){const k=key(i);setSelected(v=>v.includes(k)?v.filter(x=>x!==k):[...v,k]);}
+  async function sellSelected(){
+    if(!selectedItems.length||selling)return;
+    setSelling(true);
+    try{
+      let total=0;
+      for(const i of selectedItems){
+        const d=await betaSellPet(i.pet_id,i.variant,i.quantity);
+        total+=Number(d?.value||0);
+      }
+      setSelected([]);
+      await onRefresh?.();
+      window.dispatchEvent(new Event("petflip:refresh-private"));
+      setToast?.(`Sold ${selectedItems.length} pet stack${selectedItems.length===1?"":"s"} for 💎 ${formatCompact(total)}.`);
+    }catch(e){setToast?.(e.message||"Could not sell the selected pets.");}
+    finally{setSelling(false);}
+  }
+  async function sellAll(){
+    if(selling||!inventory.length)return;
+    if(!window.confirm("Sell every valued pet in your inventory for its current PS99 RAP value?"))return;
+    setSelling(true);
+    try{
+      const d=await betaSellAllPets();
+      setSelected([]);
+      await onRefresh?.();
+      window.dispatchEvent(new Event("petflip:refresh-private"));
+      setToast?.(`SOLD ALL · +💎 ${formatCompact(Number(d?.value||0))}`);
+    }catch(e){setToast?.(e.message||"Could not sell all pets.");}
+    finally{setSelling(false);}
+  }
+  return <section className="inventory-page">
+    <div className="page-header"><div><span>YOUR COLLECTION</span><h1>Inventory</h1><small>Sell any valued pet for its current PS99 RAP. Variants stay separate.</small></div><SearchBox value={search} onChange={setSearch} placeholder="Search inventory..."/></div>
+    <div className="tabs">{["All","Huge","Titanic","Gargantuan"].map(t=><button className={tab===t?"active":""} key={t} onClick={()=>setTab(t)}>{t}</button>)}</div>
+    <div className="inventory-sell-toolbar"><div><span className="sell-total">💎 {formatCompact(selectedValue)}</span><small>{selectedItems.length} selected stack{selectedItems.length===1?"":"s"} · select cards to sell</small></div><div><button className="ghost-btn" onClick={()=>setSelected(owned.map(key))}>{owned.length?"Select all":"Select all"}</button><button className="ghost-btn" onClick={()=>setSelected([])}>Clear</button><button className="primary-btn" disabled={!selectedItems.length||selling} onClick={sellSelected}>{selling?"Selling…":"Sell Selected"}</button><button className="ghost-btn danger" disabled={selling||!inventory.some(i=>petValue(i)>0)} onClick={sellAll}>Sell All</button></div></div>
+    <div className="owned-grid">{owned.length?owned.map(i=>{const active=selected.includes(key(i));return <div className={`owned-card ${active?"sell-selected":""}`} key={i.id} onClick={()=>toggle(i)}><span className="sell-check">{active?"✓":"+"}</span><PetIcon pet={inventoryPetShape(i)} size="medium" variant={i.variant}/><div><b>{i.name}</b><small>{i.quantity} × {i.variant}</small><strong>💎 {formatPetValue(i)} each</strong><div className="sell-inline"><button onClick={e=>{e.stopPropagation();setSelected([key(i)])}}>Select</button><button className="danger" disabled={selling} onClick={async e=>{e.stopPropagation();setSelling(true);try{const d=await betaSellPet(i.pet_id,i.variant,i.quantity);await onRefresh?.();window.dispatchEvent(new Event("petflip:refresh-private"));setToast?.(`Sold ${i.name} for 💎 ${formatCompact(Number(d?.value||0))}.`)}catch(err){setToast?.(err.message||"Could not sell pet.")}finally{setSelling(false)}}}>Sell stack</button></div></div></div>}) : <div className="empty-state wide"><Package size={32}/><b>No owned high-tier pets</b><span>Your rewards, wins and giveaways will appear here.</span></div>}</div>
+  </section>;
+}
 
 function CasesPage({session,pets,balance,setAuthOpen,setToast,navigate,caseId}){
   if(caseId){
@@ -881,7 +964,7 @@ This cannot be undone.`))return;setBusy(true);try{await betaAdminDeleteClan(c.id
 }
 
 function AdminPage({session,role,setToast,pets}){
-  const [users,setUsers]=useState([]),[giveAllReport,setGiveAllReport]=useState(null),[target,setTarget]=useState(""),[targetInventory,setTargetInventory]=useState([]),[balance,setBalance]=useState("100b"),[minutes,setMinutes]=useState("60"),[reason,setReason]=useState(""),[newRole,setNewRole]=useState("moderator"),[eventLive,setEventLive]=useState(false),[petSearch,setPetSearch]=useState(""),[selectedPet,setSelectedPet]=useState(""),[variant,setVariant]=useState("normal"),[quantity,setQuantity]=useState(1),[working,setWorking]=useState(false),[adminError,setAdminError]=useState("");
+  const [users,setUsers]=useState([]),[giveAllReport,setGiveAllReport]=useState(null),[target,setTarget]=useState(""),[targetInventory,setTargetInventory]=useState([]),[balance,setBalance]=useState("100b"),[minutes,setMinutes]=useState("60"),[reason,setReason]=useState(""),[newRole,setNewRole]=useState("moderator"),[eventLive,setEventLive]=useState(false),[petSearch,setPetSearch]=useState(""),[selectedPet,setSelectedPet]=useState(""),[variant,setVariant]=useState("normal"),[quantity,setQuantity]=useState(1),[working,setWorking]=useState(false),[adminError,setAdminError]=useState(""),[chaosEffect,setChaosEffect]=useState("jackpot"),[chaosPage,setChaosPage]=useState("all"),[chaosReward,setChaosReward]=useState("0"),[chaosMessage,setChaosMessage]=useState("");
   const canEvent=["owner","co_owner","manager","admin"].includes(role);
   const canAdmin=["owner","co_owner","manager","admin","moderator"].includes(role);
   async function reload(){try{setAdminError("");setUsers(await betaAdminGetUsers());const ev=await betaGetActiveEvent();setEventLive(Boolean(ev?.status==="live"));}catch(e){setAdminError(e.message||"Staff access required");setToast(e.message||"Staff access required")}}
@@ -895,6 +978,7 @@ function AdminPage({session,role,setToast,pets}){
       <div className="history-card admin-control-card"><h2>Player controls</h2><div className="auth-form"><div className="admin-target-row"><input value={target} onChange={e=>setTarget(e.target.value)} onBlur={()=>loadTargetInventory(e.target.value)} placeholder="Username"/><button className="ghost-btn" type="button" disabled={!target||working} onClick={()=>loadTargetInventory(target)}>Load Player</button></div><input value={balance} onChange={e=>setBalance(e.target.value)} placeholder="Balance e.g. 100b"/><input value={minutes} onChange={e=>setMinutes(e.target.value)} placeholder="Minutes (0 = permanent)"/><input value={reason} onChange={e=>setReason(e.target.value)} placeholder="Reason"/><select value={newRole} onChange={e=>setNewRole(e.target.value)}><option value="user">Member</option><option value="helper">Helper</option><option value="moderator">Moderator</option><option value="admin">Admin</option><option value="manager">Manager</option><option value="co_owner">Co Owner</option><option value="owner">Owner</option></select><div className="admin-actions"><button className="primary-btn" disabled={working} onClick={()=>action(()=>betaAdminSetBalance(target,parseCompactAmount(balance)),"Balance updated")}>Set Balance</button><button className="ghost-btn danger" disabled={working} onClick={async()=>{if(!confirm('ADMIN ABUSE → GIVEALL\n\nGive every registered player the full high-tier catalog?'))return;try{const d=await betaAdminGiveAll('');setGiveAllReport(d);setToast('GIVEALL completed.');}catch(e){setToast(e.message||'Give All failed.')}}}>Give All Players</button><button className="ghost-btn" disabled={working} onClick={()=>action(()=>betaAdminModerate(target,"mute",minutes,reason),"Player muted")}>Mute</button><button className="ghost-btn" disabled={working} onClick={()=>action(()=>betaAdminModerate(target,"ban",minutes,reason),"Player banned")}>Ban</button><button className="ghost-btn" disabled={working} onClick={()=>action(()=>betaAdminModerate(target,"unmute",0,""),"Player unmuted")}>Unmute</button><button className="ghost-btn" disabled={working} onClick={()=>action(()=>betaAdminModerate(target,"unban",0,""),"Player unbanned")}>Unban</button><button className="primary-btn" disabled={working||!canEvent} onClick={()=>action(()=>betaAdminSetRole(target,newRole),`Role set to ${newRole}`)}>Set Role</button></div></div></div>
       <div className="history-card"><div className="panel-title"><div><span>INVENTORY TOOL</span><h2>@{target||'select a player'}</h2></div><Package size={20}/></div><div className="admin-inventory-tools"><button className="ghost-btn" disabled={!target||working} onClick={()=>action(()=>betaAdminClearInventory(target),"Inventory cleared")}>Clear All Inventory</button><button className="ghost-btn" disabled={!target||working} onClick={()=>loadTargetInventory()}>Refresh</button></div><div className="admin-inventory-list">{targetInventory.length?targetInventory.map(i=><div className="admin-inventory-row" key={i.id}><PetIcon pet={inventoryPetShape(i)} size="small" variant={i.variant}/><div><b>{i.name}</b><span>{i.variant} · {i.quantity}×</span></div><button className="ghost-btn" disabled={working} onClick={()=>action(()=>betaAdminRemovePet(target,i.pet_id,i.variant,1),"1 pet removed")}>Remove 1</button><button className="ghost-btn danger" disabled={working} onClick={()=>action(()=>betaAdminRemovePet(target,i.pet_id,i.variant,i.quantity),"Pet stack removed")}>Remove All</button></div>):<div className="empty-state"><Package size={28}/><b>No inventory loaded</b><span>Select a username above and refresh.</span></div>}</div></div>
       <div className="history-card"><div className="panel-title"><div><span>ADD A PET</span><h2>Choose exact reward</h2></div><Plus size={20}/></div><SearchBox value={petSearch} onChange={setPetSearch} placeholder="Search high-tier pets..."/><div className="admin-pet-picker">{filteredPets.map(p=><button key={p.id} className={selectedPet===p.id?'selected':''} onClick={()=>setSelectedPet(p.id)}><PetIcon pet={p} size="medium"/><b>{p.name}</b><small>💎 {formatPetValue(p)}</small></button>)}</div><div className="admin-add-row"><select value={variant} onChange={e=>setVariant(e.target.value)}><option>normal</option><option>golden</option><option>rainbow</option><option>shiny</option></select><input type="number" min="1" max="999" value={quantity} onChange={e=>setQuantity(e.target.value)}/><button className="primary-btn" disabled={!target||!selectedPet||working} onClick={()=>action(()=>betaAdminAddPet(target,selectedPet,variant,Number(quantity)),`${quantity} pet(s) added`)}>Add Pet</button></div></div>
+      <div className="history-card admin-chaos-card"><div className="panel-title"><div><span className="admin-chaos-live">LIVE SERVER FX</span><h2>Admin Abuse · Chaos Console</h2></div><Zap size={20}/></div><p className="muted">Trigger a page-specific spectacle for everyone online. Optional diamonds are granted to every account by the server.</p><div className="admin-chaos-grid"><select value={chaosEffect} onChange={e=>setChaosEffect(e.target.value)}><option value="jackpot">💎 Jackpot Rain</option><option value="coinstorm">🪙 Coin Storm</option><option value="dicefall">🎲 Dicefall</option><option value="petstorm">🐾 Pet Swarm</option><option value="caseburst">📦 Case Burst</option><option value="glitch">⚡ Reality Glitch</option><option value="rainbow">🌈 Rainbow Override</option></select><select value={chaosPage} onChange={e=>setChaosPage(e.target.value)}>{[["all","All pages"],["home","Home"],["coinflip","Coinflip"],["dice","Color Dice"],["inventory","Inventory"],["profile","Profile"],["time-rewards","Time Rewards"],["cases","Cases"],["case-battle","Case Battle"],["leaderboard","Leaderboard"],["clans","Clans"],["giveaways","Giveaways"],["promo","Promo"],["admin","Admin"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}</select><input value={chaosReward} onChange={e=>setChaosReward(e.target.value)} placeholder="Reward to EVERY player (e.g. 1b)"/><input value={chaosMessage} onChange={e=>setChaosMessage(e.target.value)} placeholder="Announcement / message"/></div><div className="admin-chaos-actions"><button className="primary-btn" disabled={working} onClick={()=>action(()=>betaAdminTriggerChaos(chaosEffect,chaosPage,Math.max(0,Number(parseCompactAmount(chaosReward))||0),chaosMessage),`Admin Abuse launched: ${chaosEffect}`)}>⚡ LAUNCH ABUSE</button><button className="ghost-btn" disabled={working} onClick={()=>action(()=>betaAdminTriggerChaos(chaosEffect,chaosPage,0,chaosMessage),`FX launched: ${chaosEffect}`)}>Launch FX Only</button></div><div className="admin-chaos-warning">Server-side reward + realtime animation. Use <b>0</b> for a visual-only event.</div></div>
       {(role==="owner"||role==="manager")&&<div className="history-card"><h2>Clan Battle timer</h2><p className="muted">Reset the Clan Battle to a fresh 48-hour period when the current period has ended.</p><button className="primary-btn" disabled={working} onClick={()=>action(()=>betaAdminResetClanBattleTimer(),"Clan Battle timer reset to 48 hours.")}>Reset 48H Timer</button></div>}
       <div className="history-card"><h2>Event control</h2><p className="muted">Only Owner, Co Owner, Manager and Admin can activate or stop Red vs Blue. Moderator and Helper cannot toggle it.</p><button className={`event-toggle ${eventLive?"live":""}`} disabled={!canEvent||working} onClick={()=>action(()=>betaAdminSetEvent(!eventLive),eventLive?"Red vs Blue disabled":"Red vs Blue enabled for everyone")}>{eventLive?"● EVENT LIVE · Disable":"○ EVENT OFF · Enable"}</button></div>
       <div className="history-card promo-admin-card"><h2>Promo codes</h2><p className="muted">Owner, Co Owner, Manager and Admin can create codes.</p><PromoCodeAdmin role={role} setToast={setToast}/></div>
