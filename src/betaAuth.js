@@ -146,4 +146,5 @@ export async function betaMinesReveal(gameId, index) { return rpc("beta_mines_re
 export async function betaMinesCashout(gameId) { return rpc("beta_mines_cashout", { p_token:getBetaToken(), p_game_id:String(gameId) }); }
 export async function betaPlinkoPlay(amount) { return rpc("beta_plinko_play", { p_token:getBetaToken(), p_amount:Number(amount||0) }); }
 export async function betaCrashStart(amount) { return rpc("beta_crash_start", { p_token:getBetaToken(), p_amount:Number(amount||0) }); }
+export async function betaCrashGetActive() { return rpc("beta_crash_get_active", { p_token:getBetaToken() }); }
 export async function betaCrashCashout(gameId) { return rpc("beta_crash_cashout", { p_token:getBetaToken(), p_game_id:String(gameId) }); }
