@@ -1,8 +1,8 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp, CircleUserRound, Dice5, Gift, Hash, Heart, LogIn, MessageCircle, Package, RefreshCw, ShieldCheck, Trophy, WalletCards, X, Crown, Users, Sparkles, Send, Plus, Clock3, History, TrendingUp, TrendingDown, Box, Zap, Tag, Upload, Calculator, Minus, Medal, BarChart3, UserPlus, UserMinus, Settings2, Swords } from "lucide-react";
+import { ArrowUp, CircleUserRound, Dice5, Gift, Hash, Heart, LogIn, MessageCircle, Package, RefreshCw, ShieldCheck, Trophy, WalletCards, X, Crown, Users, Sparkles, Send, Plus, Clock3, History, TrendingUp, TrendingDown, Box, Zap, Tag, Upload, Calculator, Minus, Medal, BarChart3, UserPlus, UserMinus, Settings2, Swords, Bomb, CircleDot, Rocket } from "lucide-react";
 import { supabase, supabaseConfigured } from "./supabase";
 import { fetchPets, filterEligiblePets } from "./api";
-import { betaClaimBonus, betaClaimDailyCase, betaCreateGiveaway, betaCreateLobby, betaCreateDiceLobby, betaJoinDiceLobby, betaDrawGiveaway, betaEnterGiveaway, betaGetGiveaways, betaGetHistory, betaGetLiveBets, betaGetInventory, betaSellPet, betaSellAllPets, betaGetStats, betaSendChat, betaSession, betaSignIn, betaSignOut, betaSignUp, betaUpdateRobloxProfile, betaRunUpgrade, betaGetRole, betaAdminGetUsers, betaAdminGetInventory, betaAdminClearInventory, betaAdminRemovePet, betaAdminSetBalance, betaAdminGiveAll, betaAdminModerate, betaAdminSetRole, betaAdminSetEvent, betaAdminTriggerChaos, betaGetActiveEvent, betaJoinEvent, betaPlayEvent, betaOpenCase, betaRedeemPromo, betaAdminCreatePromo, betaFinalizeGiveaways, betaGetJoinedGiveaways, betaUpdateCustomAvatar, betaListLobbies, betaCancelLobby, betaGetCoinflipResult, betaGetLobbyResult, betaJoinLobby, betaCreateCaseBattle, betaJoinCaseBattle, betaGetCaseBattle, betaListCaseBattles, betaGetTimeRewards, betaClaimTimeReward, betaOpenCaseTicket, betaGetTimeTickets, betaGetLeaderboard, betaGetClan, betaGetTopClans, betaGetPublicClan, betaCreateClan, betaInviteToClan, betaRespondClanInvite, betaKickClanMember, betaUpgradeClan, betaClaimClanTopReward, betaDepositClan, betaAdminDeleteClan, betaGetClanBattleTimer, betaAdminResetClanBattleTimer, betaAdminResetLeaderboard } from "./betaAuth";
+import { betaClaimBonus, betaClaimDailyCase, betaCreateGiveaway, betaCreateLobby, betaCreateDiceLobby, betaJoinDiceLobby, betaDrawGiveaway, betaEnterGiveaway, betaGetGiveaways, betaGetHistory, betaGetLiveBets, betaGetInventory, betaSellPet, betaSellAllPets, betaGetStats, betaSendChat, betaSession, betaSignIn, betaSignOut, betaSignUp, betaUpdateRobloxProfile, betaRunUpgrade, betaGetRole, betaAdminGetUsers, betaAdminGetInventory, betaAdminClearInventory, betaAdminRemovePet, betaAdminSetBalance, betaAdminGiveAll, betaAdminModerate, betaAdminSetRole, betaAdminSetEvent, betaAdminTriggerChaos, betaGetActiveEvent, betaJoinEvent, betaPlayEvent, betaOpenCase, betaRedeemPromo, betaAdminCreatePromo, betaFinalizeGiveaways, betaGetJoinedGiveaways, betaUpdateCustomAvatar, betaListLobbies, betaCancelLobby, betaGetCoinflipResult, betaGetLobbyResult, betaJoinLobby, betaCreateCaseBattle, betaJoinCaseBattle, betaGetCaseBattle, betaListCaseBattles, betaGetTimeRewards, betaClaimTimeReward, betaOpenCaseTicket, betaGetTimeTickets, betaGetLeaderboard, betaGetClan, betaGetTopClans, betaGetPublicClan, betaCreateClan, betaInviteToClan, betaRespondClanInvite, betaKickClanMember, betaUpgradeClan, betaClaimClanTopReward, betaDepositClan, betaAdminDeleteClan, betaGetClanBattleTimer, betaAdminResetClanBattleTimer, betaAdminResetLeaderboard, betaMinesStart, betaMinesReveal, betaMinesCashout, betaPlinkoPlay, betaCrashStart, betaCrashCashout } from "./betaAuth";
 import { displayPetValue, formatCompact, formatNumber, parseCompactAmount, rankForWagered } from "./format";
 import { Modal, PetCard, PetIcon, PoolCard, SearchBox, tierOf } from "./components";
 import { resolveRobloxAvatar } from "./roblox";
@@ -11,12 +11,15 @@ import { WAGERED_SEED, PROFIT_SEED } from "./leaderboardData";
 
 const SITE_NAME = "SpinnyPet";
 const DISCORD_URL = "https://discord.gg/zPGvFynKG";
-const ROUTES = { "/":"home","/coinflip":"coinflip","/dice":"dice","/inventory":"inventory","/profile":"profile","/daily-cases":"time-rewards","/cases":"cases","/case-battle":"case-battle","/leaderboard":"leaderboard","/clans":"clans","/giveaways":"giveaways","/promo":"promo","/admin":"admin" };
+const ROUTES = { "/":"home","/coinflip":"coinflip","/dice":"dice","/inventory":"inventory","/profile":"profile","/daily-cases":"time-rewards","/cases":"cases","/case-battle":"case-battle","/leaderboard":"leaderboard","/mines":"mines","/plinko":"plinko","/crash":"crash","/clans":"clans","/giveaways":"giveaways","/promo":"promo","/admin":"admin" };
 const PATHS = Object.fromEntries(Object.entries(ROUTES).map(([path,page])=>[page,path]));
 const GAME_CARDS = [
   { name:"Coinflip", route:"coinflip", asset:"/assets/coinflip.png", desc:"50/50 Heads or Tails duels" },
   { name:"Color Dice", route:"dice", asset:"/assets/dice.png", desc:"Pick colors and create your own room" },
-  { name:"Case Battle", route:"case-battle", asset:"/assets/case-cosmic.png", desc:"Battle with the same SpinnyPet cases" }
+  { name:"Case Battle", route:"case-battle", asset:"/assets/case-cosmic.png", desc:"Battle with the same SpinnyPet cases" },
+  { name:"Pet Mines", route:"mines", asset:"/assets/galaxycase.png", desc:"Reveal gems, avoid the mines" },
+  { name:"Pet Plinko", route:"plinko", asset:"/assets/dicebackground.png", desc:"Drop a chip through multiplier gates" },
+  { name:"Pet Crash", route:"crash", asset:"/assets/globalbackground.png", desc:"Cash out before the rocket crashes" }
 ];
 
 function currentRoute(){
@@ -103,7 +106,7 @@ export default function App(){
   },[session]);
 
   useEffect(()=>{
-    const labels={home:"Home",coinflip:"Coinflip",dice:"Color Dice",inventory:"Inventory",profile:"Profile","daily-cases":"Time Rewards",cases:"Cases","case-battle":"Case Battle",leaderboard:"Leaderboard",clans:"Clans",giveaways:"Giveaways",promo:"Promo Code",admin:"Admin Panel"};
+    const labels={home:"Home",coinflip:"Coinflip",dice:"Color Dice",inventory:"Inventory",profile:"Profile","daily-cases":"Time Rewards",cases:"Cases","case-battle":"Case Battle",mines:"Pet Mines",plinko:"Pet Plinko",crash:"Pet Crash",leaderboard:"Leaderboard",clans:"Clans",giveaways:"Giveaways",promo:"Promo Code",admin:"Admin Panel"};
     document.title=`${SITE_NAME} · ${labels[page]||"Beta"}`;
   },[page]);
 
@@ -192,6 +195,9 @@ export default function App(){
           <SideLink active={page==="dice"} icon={<Dice5 size={18}/>} label="Color Dice" onClick={()=>navigate("dice")}/>
           <SideLink active={page==="cases"} icon={<Box size={18}/>} label="Cases" onClick={()=>navigate("cases")}/>
           <SideLink active={page==="case-battle"} icon={<Trophy size={18}/>} label="Case Battle" onClick={()=>navigate("case-battle")}/>
+          <SideLink active={page==="mines"} icon={<Bomb size={18}/>} label="Pet Mines" onClick={()=>navigate("mines")}/>
+          <SideLink active={page==="plinko"} icon={<CircleDot size={18}/>} label="Pet Plinko" onClick={()=>navigate("plinko")}/>
+          <SideLink active={page==="crash"} icon={<Rocket size={18}/>} label="Pet Crash" onClick={()=>navigate("crash")}/>
           <SideLink active={page==="leaderboard"} icon={<BarChart3 size={18}/>} label="Leaderboard" onClick={()=>navigate("leaderboard")}/>
         </NavGroup>
         <NavGroup title="MORE">
@@ -216,6 +222,9 @@ export default function App(){
         {(page==="time-rewards"||page==="daily-cases")&&<TimeRewardsPage session={session} pets={eligible} balance={balance} setAuthOpen={setAuthOpen} setToast={setToast}/>}
         {page==="cases"&&<CasesPage session={session} pets={eligible} balance={balance} setAuthOpen={setAuthOpen} setToast={setToast} navigate={navigate} caseId={caseId}/>}
         {page==="case-battle"&&<CaseBattlePage session={session} pets={eligible} balance={balance} setAuthOpen={setAuthOpen} setToast={setToast}/>}
+        {page==="mines"&&<MinesPage session={session} balance={balance} setAuthOpen={setAuthOpen} setToast={setToast} onRefresh={refreshPrivate}/>}
+        {page==="plinko"&&<PlinkoPage session={session} balance={balance} setAuthOpen={setAuthOpen} setToast={setToast} onRefresh={refreshPrivate}/>}
+        {page==="crash"&&<CrashPage session={session} balance={balance} setAuthOpen={setAuthOpen} setToast={setToast} onRefresh={refreshPrivate}/>}
         {page==="leaderboard"&&<LeaderboardPage role={role} setToast={setToast}/>}
         {page==="clans"&&<ClanPage session={session} balance={balance} setAuthOpen={setAuthOpen} setToast={setToast} onRefresh={refreshPrivate}/>}
         {page==="giveaways"&&<GiveawaysPage session={session} giveaways={giveawaysWithAssets} joinedGiveawayIds={joinedGiveawayIds} setJoinedGiveawayIds={setJoinedGiveawayIds} reload={loadGiveaways} setToast={setToast}/>}
@@ -400,6 +409,35 @@ function PromoCodePage({session,setAuthOpen,setToast,onRedeemed}){
   const [code,setCode]=useState("");const [busy,setBusy]=useState(false);
   async function redeem(e){e.preventDefault();if(!session){setAuthOpen(true);return;}if(!code.trim()){setToast("Enter a promo code.");return;}setBusy(true);try{const d=await betaRedeemPromo(code);setCode("");await onRedeemed();setToast(`Promo redeemed: ${formatCompact(d.reward_amount||0)} diamonds`);}catch(e){setToast(e.message||"Promo code could not be redeemed.");}finally{setBusy(false)}}
   return <section className="promo-page"><div className="page-header"><div><span>REWARDS</span><h1>Promo Code</h1><small>Enter a valid SpinnyPet beta code to receive diamonds.</small></div><Tag size={28}/></div><div className="promo-card"><div className="promo-icon"><Tag size={24}/></div><h2>Redeem a promo code</h2><p>Codes are case-insensitive. Each account can use a code once.</p><form onSubmit={redeem}><input value={code} onChange={e=>setCode(e.target.value.toUpperCase())} placeholder="ENTER CODE" autoComplete="off"/><button className="primary-btn" disabled={busy}>{busy?"Redeeming…":"Redeem Code"}</button></form></div></section>
+}
+
+
+function GameShell({eyebrow,title,subtitle,icon,children,right}){
+  return <section className="v23-game-page"><div className="v23-game-hero"><div><span className="eyebrow">{eyebrow}</span><h1>{icon} {title}</h1><p>{subtitle}</p></div>{right}</div>{children}</section>;
+}
+function DiamondStake({value,setValue,balance,min=1000000}){
+  return <div className="v23-stake"><label>BET</label><input value={value} onChange={e=>setValue(e.target.value)} placeholder="10m"/><div className="v23-stake-presets">{['10m','50m','100m','1b'].map(v=><button key={v} onClick={()=>setValue(v)}>{v}</button>)}<span>Balance {formatCompact(balance||0)} · Min {formatCompact(min)}</span></div></div>;
+}
+function MinesPage({session,balance,setAuthOpen,setToast,onRefresh}){
+  const [bet,setBet]=useState('10m'),[sessionId,setSessionId]=useState(null),[board,setBoard]=useState(Array(25).fill(null)),[revealed,setRevealed]=useState([]),[busy,setBusy]=useState(false),[state,setState]=useState('idle'),[mult,setMult]=useState(1),[message,setMessage]=useState('Pick a tile to start the run.');
+  const start=async()=>{if(!session){setAuthOpen(true);return}setBusy(true);try{const d=await betaMinesStart(parseCompactAmount(bet));setSessionId(d.id);setBoard(Array(25).fill(null));setRevealed([]);setMult(1);setState('playing');setMessage('Minefield armed. Find gems and cash out before the mine.');}catch(e){setToast(e.message||'Could not start Mines.')}finally{setBusy(false)}};
+  const reveal=async i=>{if(state!=='playing'||busy||revealed.includes(i))return;setBusy(true);try{const d=await betaMinesReveal(sessionId,i);setBoard(b=>{const n=[...b];n[i]=d.hit?'mine':'gem';if(d.hit){(d.mines||[]).forEach(x=>n[x]='mine')}return n});setRevealed(r=>[...r,i]);if(d.hit){setState('lost');setMessage('BOOM. The mine got you.');setMult(1)}else{setMult(Number(d.multiplier||1));setMessage(`Safe tile. Cash out at ${formatCompact(Number(d.payout||0))} diamonds.`)}}catch(e){setToast(e.message||'Could not reveal tile.')}finally{setBusy(false)}};
+  const cash=async()=>{if(!sessionId||state!=='playing')return;setBusy(true);try{const d=await betaMinesCashout(sessionId);setState('won');setMessage(`Cashed out ${formatCompact(Number(d.payout||0))} diamonds.`);setToast(`MINES · +💎 ${formatCompact(Number(d.payout||0))}`);onRefresh();}catch(e){setToast(e.message||'Cash out failed.')}finally{setBusy(false)}};
+  return <GameShell eyebrow="V23 ORIGINAL" title="Pet Mines" subtitle="Reveal safe tiles, build your multiplier, then cash out. The mine layout is generated and settled server-side." icon="💣" right={<div className="v23-game-badge">25 TILES · 3 MINES</div>}><div className="v23-game-grid"><div className="v23-game-panel"><DiamondStake value={bet} setValue={setBet} balance={balance}/><div className="v23-mines-top"><div><small>MULTIPLIER</small><strong>{mult.toFixed(2)}×</strong></div><div><small>STATUS</small><strong>{state==='playing'?'LIVE':state.toUpperCase()}</strong></div><button className="primary-btn" disabled={busy||state==='playing'} onClick={start}>{state==='idle'||state==='lost'||state==='won'?'Start Round':'Running'}</button><button className="ghost-btn" disabled={busy||state!=='playing'||!revealed.length} onClick={cash}>Cash Out</button></div><div className="mines-board">{board.map((v,i)=><button key={i} className={`mine-tile ${v||''}`} disabled={state!=='playing'||busy||Boolean(v)} onClick={()=>reveal(i)}>{v==='mine'?'💣':v==='gem'?'💎':'?'}</button>)}</div><div className="v23-game-note">{message}</div></div><div className="v23-game-side"><h3>How it works</h3><p>Each safe reveal increases your multiplier. Hit a mine and the round ends. Cash out whenever you want.</p><div className="v23-rule"><b>Server settled</b><span>Mine positions and payouts never come from the browser.</span></div><div className="v23-rule"><b>Fast rounds</b><span>Start a fresh 25-tile board after every result.</span></div></div></div></GameShell>;
+}
+function PlinkoPage({session,balance,setAuthOpen,setToast,onRefresh}){
+  const [bet,setBet]=useState('10m'),[result,setResult]=useState(null),[busy,setBusy]=useState(false),[history,setHistory]=useState([]);
+  const play=async()=>{if(!session){setAuthOpen(true);return}setBusy(true);try{const d=await betaPlinkoPlay(parseCompactAmount(bet));setResult(d);setHistory(h=>[d,...h].slice(0,8));setToast(`PLINKO · ${formatCompact(Number(d.payout||0))} diamonds`);onRefresh();}catch(e){setToast(e.message||'Could not play Plinko.')}finally{setBusy(false)}};
+  const path=result?.path||[];
+  return <GameShell eyebrow="V23 ORIGINAL" title="Pet Plinko" subtitle="Drop a chip through a neon peg field. Every bounce is settled by the server and lands on a multiplier gate." icon="🟣" right={<div className="v23-game-badge">×0.20 → ×10.00</div>}><div className="v23-game-grid"><div className="v23-game-panel"><DiamondStake value={bet} setValue={setBet} balance={balance}/><div className="plinko-stage"><div className="plinko-chip">{result?'🐾':'●'}</div>{Array.from({length:7},(_,r)=><div className="plinko-row" key={r}>{Array.from({length:r+4},(_,i)=><i key={i}>•</i>)}</div>)}<div className="plinko-gates">{[0.2,0.5,1,1.5,2,3,5,10,5,3,2,1.5,1,.5,.2].map((x,i)=><span key={`${x}-${i}`} className={Number(result?.multiplier)===x?'landed':''}>×{x}</span>)}</div></div><button className="primary-btn wide" disabled={busy} onClick={play}>{busy?'Dropping…':'Drop Pet Chip'}</button>{result&&<div className="plinko-result"><span>LANDED ON</span><strong>×{Number(result.multiplier).toFixed(2)}</strong><b>💎 {formatCompact(Number(result.payout||0))}</b></div>}</div><div className="v23-game-side"><h3>Recent drops</h3>{history.length?history.map((r,i)=><div className="v23-history" key={i}><span>×{Number(r.multiplier).toFixed(2)}</span><b>+{formatCompact(Number(r.payout||0))}</b></div>):<div className="empty-state">No drops yet.</div>}</div></div></GameShell>;
+}
+function CrashPage({session,balance,setAuthOpen,setToast,onRefresh}){
+  const [bet,setBet]=useState('10m'),[run,setRun]=useState(null),[mult,setMult]=useState(1),[busy,setBusy]=useState(false),[status,setStatus]=useState('idle');
+  useEffect(()=>{if(status!=='playing'||!run)return;const started=Date.parse(run.started_at||new Date().toISOString());const timer=setInterval(()=>{const m=Math.max(1,Math.exp((Date.now()-started)/9000));setMult(Math.min(m,1000));},50);return()=>clearInterval(timer)},[status,run]);
+  const start=async()=>{if(!session){setAuthOpen(true);return}setBusy(true);try{const d=await betaCrashStart(parseCompactAmount(bet));setRun(d);setMult(1);setStatus('playing');}catch(e){setToast(e.message||'Could not start Crash.')}finally{setBusy(false)}};
+  const cash=async()=>{if(status!=='playing')return;setBusy(true);try{const d=await betaCrashCashout(run.id);setStatus('won');setMult(Number(d.multiplier||1));setToast(`CRASH · +💎 ${formatCompact(Number(d.payout||0))}`);onRefresh();}catch(e){setStatus('crashed');setToast(e.message||'Too late — crash!');onRefresh();}finally{setBusy(false)}};
+  useEffect(()=>{if(status!=='playing'||!run)return;const t=setInterval(()=>{if(Date.now()-Date.parse(run.started_at)>60000){setStatus('crashed');clearInterval(t)}},200);return()=>clearInterval(t)},[status,run]);
+  return <GameShell eyebrow="V23 ORIGINAL" title="Pet Crash" subtitle="The rocket climbs, your multiplier rises, and the only question is when you cash out. The crash point is hidden server-side." icon="🚀" right={<div className={`v23-game-badge ${status==='crashed'?'danger':''}`}>{status==='playing'?'LIVE':'READY'}</div>}><div className="crash-stage"><div className="crash-stars"/><div className="crash-rocket" style={{transform:`translateY(${Math.min(180,(mult-1)*55)}px) rotate(${Math.min(18,(mult-1)*4)}deg)`}}>🚀</div><div className="crash-mult">{mult.toFixed(2)}×</div><div className="crash-status">{status==='playing'?'CASH OUT BEFORE THE CRASH':status==='won'?'CASHED OUT':status==='crashed'?'CRASHED':'READY'}</div></div><div className="v23-crash-controls"><DiamondStake value={bet} setValue={setBet} balance={balance}/>{status==='playing'?<button className="primary-btn crash-cash" disabled={busy} onClick={cash}>Cash Out · {mult.toFixed(2)}×</button>:<button className="primary-btn crash-start" disabled={busy} onClick={start}>{busy?'Launching…':'Launch Rocket'}</button>}</div><div className="v23-game-note">Crash multiplier is verified against the server start time and hidden crash point. The browser cannot choose the outcome.</div></GameShell>;
 }
 
 function PromoCodeAdmin({role,setToast}){

@@ -139,3 +139,11 @@ export async function betaAdminSetEvent(enabled) { return rpc("beta_admin_set_ev
 export async function betaGetActiveEvent() { return (await rpc("beta_get_active_event", { p_token: getBetaToken() })) || null; }
 export async function betaJoinEvent(team) { return rpc("beta_join_event", { p_token: getBetaToken(), p_team: team }); }
 export async function betaPlayEvent() { return rpc("beta_play_event", { p_token: getBetaToken() }); }
+
+
+export async function betaMinesStart(amount) { return rpc("beta_mines_start", { p_token:getBetaToken(), p_amount:Number(amount||0) }); }
+export async function betaMinesReveal(gameId, index) { return rpc("beta_mines_reveal", { p_token:getBetaToken(), p_game_id:String(gameId), p_index:Number(index) }); }
+export async function betaMinesCashout(gameId) { return rpc("beta_mines_cashout", { p_token:getBetaToken(), p_game_id:String(gameId) }); }
+export async function betaPlinkoPlay(amount) { return rpc("beta_plinko_play", { p_token:getBetaToken(), p_amount:Number(amount||0) }); }
+export async function betaCrashStart(amount) { return rpc("beta_crash_start", { p_token:getBetaToken(), p_amount:Number(amount||0) }); }
+export async function betaCrashCashout(gameId) { return rpc("beta_crash_cashout", { p_token:getBetaToken(), p_game_id:String(gameId) }); }
